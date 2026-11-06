@@ -4,7 +4,7 @@ import logging
 from threading import Thread
 from flask import Flask
 from bot import bot, dp
-import database as db  # <-- Добавили импорт базы
+import database as db
 
 logging.basicConfig(level=logging.INFO)
 app = Flask(__name__)
@@ -16,21 +16,16 @@ def home():
 
 def start_bot():
     async def _run():
-        # 1. Создаем таблицы в базе данных
         await db.init_db()
-        logging.info("✅ База данных инициализирована")
-        
-        # 2. Сбрасываем вебхук
+        logging.info("✅ База данных готова")
         await bot.delete_webhook(drop_pending_updates=True)
-        logging.info("✅ Webhook сброшен, запускаю polling...")
-        
-        # 3. Запускаем бота
-        await dp.start_polling(bot, drop_pending_updates=True, handle_signals=False)
+        logging.info("✅ Бот запущен!")
+        await dp.start_polling(bot, handle_signals=False)
 
     try:
         asyncio.run(_run())
     except Exception as e:
-        logging.exception("❌ Бот упал: %s", e)
+        logging.exception("❌ Ошибка: %s", e)
 
 if __name__ == "__main__":
     Thread(target=start_bot, daemon=True).start()
