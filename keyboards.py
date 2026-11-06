@@ -1,13 +1,20 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton as B
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton as KB
 
-def main_menu():
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [B(text="🎰 Играть", callback_data="menu_games"), B(text="💼 Заработок", callback_data="menu_work")],
-        [B(text="🛒 Магазин", callback_data="menu_shop"), B(text="💎 VIP", callback_data="menu_vip")],
-        [B(text="🔄 Обменник", callback_data="menu_exchange"), B(text="👤 Профиль", callback_data="menu_profile")],
-        [B(text="🏆 Топ-10", callback_data="menu_top"), B(text="📜 Обновления", callback_data="menu_updates")]
-    ])
+# СЕТКА ВНИЗУ (Reply Keyboard)
+def bottom_grid():
+    return ReplyKeyboardMarkup(keyboard=[
+        [KB(text="🎰 Играть"), KB(text="💼 Заработок")],
+        [KB(text="🛒 Магазин"), KB(text="💎 VIP")],
+        [KB(text="🔄 Обменник"), KB(text="👤 Профиль")],
+        [KB(text="🏆 Топ-10"), KB(text="📜 Обновления")]
+    ], resize_keyboard=True)
 
+# Вспомогательная кнопка "Назад" для инлайн-меню
+def back_menu():
+    return InlineKeyboardMarkup(inline_keyboard=[[B(text="🔙 Назад", callback_data="menu_main")]])
+
+# ИГРЫ (Инлайн)
 def games_menu():
     return InlineKeyboardMarkup(inline_keyboard=[
         [B(text="🎰 Слоты", callback_data="game_slots"), B(text="🎲 Кости", callback_data="game_dice")],
@@ -21,22 +28,6 @@ def bet_menu(game):
         [B(text="10 💰", callback_data=f"bet_{game}_10"), B(text="50 💰", callback_data=f"bet_{game}_50"), B(text="100 💰", callback_data=f"bet_{game}_100")],
         [B(text="500 💰", callback_data=f"bet_{game}_500"), B(text="💸 ВСЁ 💸", callback_data=f"bet_{game}_all")],
         [B(text="🔙 Назад", callback_data="menu_games")],
-    ])
-
-def shop_menu():
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [B(text="🏠 Купить Дом (10 000 💰)", callback_data="shop_buy_house")],
-        [B(text="💎 Купить VIP (50 000 💰)", callback_data="shop_buy_vip")],
-        [B(text="🔙 Назад", callback_data="menu_main")]
-    ])
-
-def back_menu():
-    return InlineKeyboardMarkup(inline_keyboard=[[B(text="🔙 Назад", callback_data="menu_main")]])
-
-def after_game(game):
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [B(text="🔁 Играть ещё", callback_data=f"game_{game}")],
-        [B(text="🔙 В меню", callback_data="menu_main")],
     ])
 
 def dice_choice(bet):
@@ -62,4 +53,24 @@ def roulette_choice(bet):
 def bj_buttons():
     return InlineKeyboardMarkup(inline_keyboard=[
         [B(text="➕ Взять карту", callback_data="bj_hit"), B(text="✋ Хватит", callback_data="bj_stand")]
+    ])
+
+def shop_menu():
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [B(text="🏠 Купить Дом (10 000 💰)", callback_data="shop_buy_house")],
+        [B(text="💎 Купить VIP (50 000 💰)", callback_data="shop_buy_vip")],
+        [B(text="🔙 Назад", callback_data="menu_main")]
+    ])
+
+def after_game(game):
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [B(text="🔁 Играть ещё", callback_data=f"game_{game}")],
+        [B(text="🔙 В меню", callback_data="menu_main")],
+    ])
+
+def admin_menu():
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [B(text="👤 Забанить юзера", callback_data="admin_ban"), B(text="✅ Разбанить", callback_data="admin_unban")],
+        [B(text="💰 Выдать деньги", callback_data="admin_give")],
+        [B(text="🔙 Выйти в меню", callback_data="menu_main")]
     ])
