@@ -17,15 +17,9 @@ def home():
 def start_bot():
     async def _run():
         await db.init_db()
-        logging.info("✅ База данных готова")
         await bot.delete_webhook(drop_pending_updates=True)
-        logging.info("✅ Бот запущен!")
         await dp.start_polling(bot, handle_signals=False)
-
-    try:
-        asyncio.run(_run())
-    except Exception as e:
-        logging.exception("❌ Ошибка: %s", e)
+    asyncio.run(_run())
 
 if __name__ == "__main__":
     Thread(target=start_bot, daemon=True).start()
