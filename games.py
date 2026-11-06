@@ -1,5 +1,6 @@
 import random
 
+# --- СЛОТЫ ---
 SLOT_SYMBOLS = ["🍒", "🍋", "🍊", "🔔", "⭐", "💎"]
 SLOT_PAYOUTS = {"🍒": 3, "🍋": 4, "🍊": 5, "🔔": 8, "⭐": 15, "💎": 50}
 
@@ -12,20 +13,18 @@ def slots_multiplier(reels):
     if a == b or b == c or a == c: return 1.2
     return 0
 
+# --- КОСТИ ---
 def roll_dice(): return random.randint(1, 6)
+DICE_EMOJI = ["⚀","⚁","⚂","⚃","⚄","⚅"]
 
-def flip_coin(): return random.choice(["heads", "tails"])
-
+# --- РУЛЕТКА ---
 def spin_roulette(): return random.randint(0, 36)
-
 def roulette_color(n):
     if n == 0: return "green"
     red = {1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36}
     return "red" if n in red else "black"
 
-DICE_EMOJI = ["⚀","⚁","⚂","⚃","⚄","⚅"]
-
-# --- Блэкджек ---
+# --- БЛЭКДЖЕК ---
 def new_deck():
     ranks = ["2","3","4","5","6","7","8","9","10","J","Q","K","A"]
     return [(r, s) for r in ranks for s in ["♠","♥","♦","♣"]]
@@ -42,3 +41,8 @@ def hand_value(hand):
 
 def fmt_hand(hand):
     return " ".join(f"{r}{s}" for r, s in hand)
+
+# --- МИНЫ ---
+def generate_mines(field_size=9, mines_count=3):
+    # Возвращает список индексов, где находятся мины (от 0 до 8)
+    return set(random.sample(range(field_size), mines_count))
