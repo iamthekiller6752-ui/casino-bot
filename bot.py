@@ -10,7 +10,7 @@ import database as db
 import games as g
 import keyboards as kb
 
-BOT_TOKEN = os.getenv("BOT_TOKEN")
+BOT_TOKEN = os.getenv("9179387154:AAESWQmwzVMhO0J4lkvDXDdxKnH1JmZElYc")
 ADMIN_ID = 7288186874  # ЗАМЕНИ НА СВОЙ ID!
 
 bot = Bot(token=9179387154:AAESWQmwzVMhO0J4lkvDXDdxKnH1JmZElYc)
