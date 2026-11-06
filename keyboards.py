@@ -2,32 +2,31 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton as B
 
 def main_menu():
     return InlineKeyboardMarkup(inline_keyboard=[
-        [B(text="🎰 Играть", callback_data="menu_games", style="primary")],
-        [B(text="👤 Профиль", callback_data="menu_profile"), B(text="🏆 Топ", callback_data="menu_top")],
-        [B(text="🎁 Бонус", callback_data="menu_bonus"), B(text="📜 Квесты", callback_data="menu_quests")],
-        [B(text="🛒 Магазин", callback_data="menu_shop"), B(text="⚔️ Дуэли", callback_data="menu_duels")],
-        [B(text="💎 VIP", callback_data="menu_vip"), B(text="🔗 Рефералы", callback_data="menu_ref")],
+        [B(text="🎮 ИГРАТЬ", callback_data="menu_games")],
+        [B(text="👤 Профиль", callback_data="menu_profile"), B(text="🏆 Топ-10", callback_data="menu_top")],
+        [B(text="🎁 Бонус", callback_data="menu_bonus"), B(text="💎 VIP", callback_data="menu_vip")],
+        [B(text="🛒 Магазин", callback_data="menu_shop"), B(text="📜 Квесты", callback_data="menu_quests")],
     ])
 
 def games_menu():
     return InlineKeyboardMarkup(inline_keyboard=[
         [B(text="🎰 Слоты", callback_data="game_slots"), B(text="🎲 Кости", callback_data="game_dice")],
-        [B(text="🪙 Монетка", callback_data="game_coin"), B(text="🎡 Рулетка", callback_data="game_roulette")],
-        [B(text="🃏 Блэкджек", callback_data="game_blackjack", style="success")],
+        [B(text="🎡 Рулетка", callback_data="game_roulette"), B(text="🃏 Блэкджек", callback_data="game_blackjack")],
+        [B(text="💣 Мины", callback_data="game_mines"), B(text="🪙 Монетка", callback_data="game_coin")],
         [B(text="🔙 Назад", callback_data="menu_main")],
     ])
 
 def bet_menu(game):
     return InlineKeyboardMarkup(inline_keyboard=[
         [B(text="10 💰", callback_data=f"bet_{game}_10"), B(text="50 💰", callback_data=f"bet_{game}_50"), B(text="100 💰", callback_data=f"bet_{game}_100")],
-        [B(text="💸 Всё", callback_data=f"bet_{game}_all", style="danger")],
+        [B(text="500 💰", callback_data=f"bet_{game}_500"), B(text="💸 ВСЁ 💸", callback_data=f"bet_{game}_all")],
         [B(text="🔙 Назад", callback_data="menu_games")],
     ])
 
 def dice_choice(bet):
     return InlineKeyboardMarkup(inline_keyboard=[
-        [B(text="Больше 3 (×1.9)", callback_data=f"dice_over_{bet}"), B(text="Меньше 4 (×1.9)", callback_data=f"dice_under_{bet}")],
-        [B(text="Ровно 6 (×5)", callback_data=f"dice_six_{bet}"), B(text="Ровно 1 (×5)", callback_data=f"dice_one_{bet}")],
+        [B(text="🔽 Меньше 4 (×1.9)", callback_data=f"dice_under_{bet}"), B(text="🔼 Больше 3 (×1.9)", callback_data=f"dice_over_{bet}")],
+        [B(text="🎯 Ровно 1 (×5)", callback_data=f"dice_one_{bet}"), B(text="🎯 Ровно 6 (×5)", callback_data=f"dice_six_{bet}")],
         [B(text="🔙 Назад", callback_data="menu_games")],
     ])
 
@@ -46,14 +45,31 @@ def roulette_choice(bet):
 
 def bj_buttons():
     return InlineKeyboardMarkup(inline_keyboard=[
-        [B(text="➕ Взять карту", callback_data="bj_hit", style="success"), B(text="✋ Хватит", callback_data="bj_stand", style="danger")]
+        [B(text="➕ Взять карту", callback_data="bj_hit"), B(text="✋ Хватит", callback_data="bj_stand")]
     ])
 
+def mines_grid(hidden_cells, bet, mined_cells=set()):
+    # Генерируем сетку 3x3
+    buttons = []
+    for row in range(3):
+        row_buttons = []
+        for col in range(3):
+            idx = row * 3 + col
+            if idx in hidden_cells:
+                text = "💎" if idx in mined_cells else "❓"
+            else:
+                text = "💣"
+            row_buttons.append(B(text=text, callback_data=f"mines_click_{idx}_{bet}"))
+        buttons.append(row_buttons)
+    buttons.append([B(text="💰 Забрать выигрыш", callback_data=f"mines_cashout_{bet}")])
+    buttons.append([B(text="🔙 В меню", callback_data="menu_main")])
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
 def back_main():
-    return InlineKeyboardMarkup(inline_keyboard=[[B(text="🔙 В меню", callback_data="menu_main")]])
+    return InlineKeyboardMarkup(inline_keyboard=[[B(text="🔙 В главное меню", callback_data="menu_main")]])
 
 def after_game(game):
     return InlineKeyboardMarkup(inline_keyboard=[
-        [B(text="🔁 Играть ещё", callback_data=f"game_{game}", style="success")],
+        [B(text="🔁 Играть ещё", callback_data=f"game_{game}")],
         [B(text="🏠 В меню", callback_data="menu_main")],
     ])
