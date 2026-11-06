@@ -13,7 +13,12 @@ async def init_db():
             losses INTEGER DEFAULT 0,
             biggest_win INTEGER DEFAULT 0,
             last_bonus INTEGER DEFAULT 0,
-            total_bets INTEGER DEFAULT 0
+            total_bets INTEGER DEFAULT 0,
+            vip_level INTEGER DEFAULT 0,
+            house_id INTEGER DEFAULT 0,
+            last_work INTEGER DEFAULT 0,
+            banned INTEGER DEFAULT 0,
+            last_seen INTEGER DEFAULT 0
         )""")
         await db.commit()
 
@@ -25,16 +30,19 @@ async def get_user(user_id):
             await db.execute("INSERT INTO users (user_id) VALUES (?)", (user_id,))
             await db.commit()
             return await get_user(user_id)
+        # Обновляем время онлайна
+        await db.execute("UPDATE users SET last_seen = ? WHERE user_id = ?", (int(time.time()), user_id))
+        await db.commit()
         return row
+
+async def get_balance(user_id):
+    user = await get_user(user_id)
+    return user[1]
 
 async def change_balance(user_id, amount):
     async with aiosqlite.connect(DB) as db:
         await db.execute("UPDATE users SET balance = balance + ? WHERE user_id = ?", (amount, user_id))
         await db.commit()
-
-async def get_balance(user_id):
-    user = await get_user(user_id)
-    return user[1]
 
 async def record_game(user_id, won, bet, prize):
     async with aiosqlite.connect(DB) as db:
@@ -46,7 +54,7 @@ async def record_game(user_id, won, bet, prize):
 
 async def get_leaderboard():
     async with aiosqlite.connect(DB) as db:
-        async with db.execute("SELECT user_id, balance, wins FROM users ORDER BY balance DESC LIMIT 10") as cur:
+        async with db.execute("SELECT user_id, balance, wins FROM users WHERE banned = 0 ORDER BY balance DESC LIMIT 10") as cur:
             return await cur.fetchall()
 
 async def claim_bonus(user_id):
@@ -56,10 +64,16 @@ async def claim_bonus(user_id):
     if now - last_bonus < 86400:
         return False, 86400 - (now - last_bonus)
     
-    # Бонус зависит от баланса (чем богаче, тем меньше бонус, чтобы не было инфляции)
     bonus = 500 if user[1] < 5000 else 250
     await change_balance(user_id, bonus)
     async with aiosqlite.connect(DB) as db:
         await db.execute("UPDATE users SET last_bonus = ? WHERE user_id = ?", (now, user_id))
         await db.commit()
     return True, bonus
+
+async def get_online_count():
+    # Онлайн за последние 5 минут
+    now = int(time.time()) - 300
+    async with aiosqlite.connect(DB) as db:
+        async with db.execute("SELECT COUNT(*) FROM users WHERE last_seen > ?", (now,)) as cur:
+            return (await cur.fetchone())[0]
