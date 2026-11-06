@@ -1,4 +1,4 @@
-import os, random, time
+import os, random, time, asyncio
 from aiogram import Bot, Dispatcher, F
 from aiogram.filters import CommandStart, Command
 from aiogram.types import Message, CallbackQuery
@@ -10,10 +10,11 @@ import database as db
 import games as g
 import keyboards as kb
 
-BOT_TOKEN = os.getenv("9179387154:AAESWQmwzVMhO0J4lkvDXDdxKnH1JmZElYc")
-ADMIN_ID = 7288186874  # ЗАМЕНИ НА СВОЙ ID!
+# Безопасный запуск токена (сработает, даже если не настроить Render)
+BOT_TOKEN = os.getenv("BOT_TOKEN", "9179387154:AAESWQmwzVMhO0J4lkvDXDdxKnH1JmZElYc")
+ADMIN_ID = 123456789  # ЗАМЕНИ НА СВОЙ ID!
 
-bot = Bot(token=9179387154:AAESWQmwzVMhO0J4lkvDXDdxKnH1JmZElYc)
+bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher(storage=MemoryStorage())
 
 class Blackjack(StatesGroup):
@@ -24,7 +25,8 @@ class RouletteState(StatesGroup):
 
 # --- ХЕЛПЕРЫ ---
 async def format_balance(uid):
-    return f"{await db.get_balance(uid):,}".replace(",", " ")
+    bal = await db.get_balance(uid)
+    return f"{bal:,}".replace(",", " ")
 
 # --- СТАРТ ---
 @dp.message(CommandStart())
@@ -37,9 +39,7 @@ async def start(message: Message):
     
     user = await db.get_user(message.from_user.id)
     if ref_id and ref_id != message.from_user.id and not user[8]:
-        async with db.aiosqlite.connect(db.DB) as d:
-            await d.execute("UPDATE users SET referrer_id = ? WHERE user_id = ?", (ref_id, message.from_user.id))
-            await d.commit()
+        await db.add_referral(ref_id, message.from_user.id)
     
     bal = await format_balance(message.from_user.id)
     await message.answer(
@@ -56,8 +56,7 @@ async def menu_main(cb: CallbackQuery, state: FSMContext):
     await state.clear()
     bal = await format_balance(cb.from_user.id)
     await cb.message.edit_text(
-        f"🏠 <b>Главное меню</b>\n\n"
-        f"💰 Баланс: <b>{bal} 💰</b>",
+        f"🏠 <b>Главное меню</b>\n\n💰 Баланс: <b>{bal} 💰</b>",
         parse_mode="HTML", reply_markup=kb.main_menu()
     )
     await cb.answer()
@@ -66,8 +65,7 @@ async def menu_main(cb: CallbackQuery, state: FSMContext):
 async def menu_games(cb: CallbackQuery, state: FSMContext):
     await state.clear()
     await cb.message.edit_text(
-        "🎮 <b>Выбери игру</b>\n\n"
-        "Испытай удачу в одной из наших игр!",
+        "🎮 <b>Выбери игру</b>\n\nИспытай удачу в одной из наших игр!",
         parse_mode="HTML", reply_markup=kb.games_menu()
     )
     await cb.answer()
@@ -79,11 +77,9 @@ async def profile(cb: CallbackQuery):
     vip = vip_names[min(u[6], 4)]
     
     text = (
-        f"👤 <b>Профиль игрока</b>\n"
-        f"───────────────\n"
+        f"👤 <b>Профиль игрока</b>\n───────────────\n"
         f"🆔 ID: <code>{u[0]}</code>\n"
-        f"💎 Статус: <b>{vip}</b>\n"
-        f"───────────────\n"
+        f"💎 Статус: <b>{vip}</b>\n───────────────\n"
         f"💰 Баланс: <b>{await format_balance(u[0])} 💰</b>\n"
         f"🏆 Побед: <b>{u[2]}</b> | 💀 Поражений: <b>{u[3]}</b>\n"
         f"🎯 Всего ставок: <b>{u[7]}</b>\n"
@@ -113,9 +109,7 @@ async def bonus(cb: CallbackQuery):
         return
     await cb.answer(f"🎁 Ты получил {res} 💰!", show_alert=True)
     await cb.message.edit_text(
-        f"🎁 <b>Ежедневный бонус!</b>\n\n"
-        f"Ты получил <b>500 💰</b>\n"
-        f"💰 Баланс: <b>{await format_balance(cb.from_user.id)} 💰</b>",
+        f"🎁 <b>Ежедневный бонус!</b>\n\nТы получил <b>500 💰</b>\n💰 Баланс: <b>{await format_balance(cb.from_user.id)} 💰</b>",
         parse_mode="HTML", reply_markup=kb.back_main()
     )
 
@@ -164,8 +158,7 @@ async def play_slots(cb, bet):
     text = (
         f"🎰 <b>Слоты</b>\n───────────────\n"
         f"| {' | '.join(reels)} |\n───────────────\n"
-        f"Ставка: <b>{bet} 💰</b>\n"
-        f"Выигрыш: {res_text}\n"
+        f"Ставка: <b>{bet} 💰</b>\nВыигрыш: {res_text}\n"
         f"💰 Баланс: <b>{await format_balance(cb.from_user.id)} 💰</b>"
     )
     await cb.message.edit_text(text, parse_mode="HTML", reply_markup=kb.after_game("slots"))
@@ -194,8 +187,7 @@ async def play_dice(cb: CallbackQuery):
     text = (
         f"🎲 <b>Кости</b>\n───────────────\n"
         f"Выпало: {g.DICE_EMOJI[roll-1]} <b>{roll}</b>\n───────────────\n"
-        f"Ставка: <b>{bet} 💰</b>\n"
-        f"Выигрыш: {res_text}\n"
+        f"Ставка: <b>{bet} 💰</b>\nВыигрыш: {res_text}\n"
         f"💰 Баланс: <b>{await format_balance(cb.from_user.id)} 💰</b>"
     )
     await cb.message.edit_text(text, parse_mode="HTML", reply_markup=kb.after_game("dice"))
@@ -222,8 +214,7 @@ async def play_coin(cb: CallbackQuery):
     text = (
         f"🪙 <b>Монетка</b>\n───────────────\n"
         f"Выпало: {emoji} <b>{name}</b>\n───────────────\n"
-        f"Ставка: <b>{bet} 💰</b>\n"
-        f"Выигрыш: {res_text}\n"
+        f"Ставка: <b>{bet} 💰</b>\nВыигрыш: {res_text}\n"
         f"💰 Баланс: <b>{await format_balance(cb.from_user.id)} 💰</b>"
     )
     await cb.message.edit_text(text, parse_mode="HTML", reply_markup=kb.after_game("coin"))
@@ -261,8 +252,7 @@ async def play_roulette(cb: CallbackQuery, state: FSMContext):
     text = (
         f"🎡 <b>Рулетка</b>\n───────────────\n"
         f"Выпало: {color_emoji} <b>{num}</b>\n───────────────\n"
-        f"Ставка: <b>{bet} 💰</b>\n"
-        f"Выигрыш: {res_text}\n"
+        f"Ставка: <b>{bet} 💰</b>\nВыигрыш: {res_text}\n"
         f"💰 Баланс: <b>{await format_balance(cb.from_user.id)} 💰</b>"
     )
     await cb.message.edit_text(text, parse_mode="HTML", reply_markup=kb.after_game("roulette"))
@@ -297,8 +287,7 @@ async def roulette_number(message: Message, state: FSMContext):
     text = (
         f"🎯 <b>Рулетка (Число)</b>\n───────────────\n"
         f"Выпало: {emoji} <b>{result}</b> (твоё: {num})\n───────────────\n"
-        f"Ставка: <b>{bet} 💰</b>\n"
-        f"Выигрыш: {res_text}\n"
+        f"Ставка: <b>{bet} 💰</b>\nВыигрыш: {res_text}\n"
         f"💰 Баланс: <b>{await format_balance(message.from_user.id)} 💰</b>"
     )
     await message.answer(text, parse_mode="HTML", reply_markup=kb.after_game("roulette"))
@@ -325,8 +314,7 @@ async def show_bj(cb, state, note=""):
         f"🃏 <b>Блэкджек</b>\n───────────────\n"
         f"Твои карты: {g.fmt_hand(p)} = <b>{g.hand_value(p)}</b>\n"
         f"Дилер: {g.fmt_hand([d[0]])} + 🂠\n───────────────\n"
-        f"{note}\n"
-        f"💰 Баланс: <b>{await format_balance(cb.from_user.id)} 💰</b>"
+        f"{note}\n💰 Баланс: <b>{await format_balance(cb.from_user.id)} 💰</b>"
     )
     await cb.message.edit_text(text, parse_mode="HTML", reply_markup=kb.bj_buttons())
     await cb.answer()
@@ -374,8 +362,7 @@ async def bj_finish(cb, state, note, win=False, draw=False):
         f"🃏 <b>Итог Блэкджека</b>\n───────────────\n"
         f"Твои: {g.fmt_hand(data['player'])} = <b>{g.hand_value(data['player'])}</b>\n"
         f"Дилер: {g.fmt_hand(data['dealer'])} = <b>{g.hand_value(data['dealer'])}</b>\n───────────────\n"
-        f"{note}\n"
-        f"💰 Баланс: <b>{await format_balance(cb.from_user.id)} 💰</b>"
+        f"{note}\n💰 Баланс: <b>{await format_balance(cb.from_user.id)} 💰</b>"
     )
     await cb.message.edit_text(text, parse_mode="HTML", reply_markup=kb.after_game("blackjack"))
     await cb.answer()
@@ -399,7 +386,12 @@ async def admin_give(message: Message):
 @dp.message(Command("stats"))
 async def admin_stats(message: Message):
     if message.from_user.id != ADMIN_ID: return
-    async with db.aiosqlite.connect(db.DB) as d:
+    import aiosqlite
+    async with aiosqlite.connect(db.DB) as d:
         async with d.execute("SELECT COUNT(*), SUM(balance) FROM users") as cur:
             users, total_bal = await cur.fetchone()
     await message.answer(f"📊 Юзеров: {users}\n💰 Монет в системе: {total_bal or 0}")
+
+# --- ЗАПУСК ДЛЯ ЛОКАЛЬНОГО ТЕСТА (не для Render) ---
+if __name__ == "__main__":
+    asyncio.run(dp.start_polling(bot))
